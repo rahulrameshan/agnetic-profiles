@@ -1,0 +1,168 @@
+/* ============================================================
+   EXPERIENCE STYLES
+   Timeline of cards — scannable in 10 seconds.
+   Left: who & when. Right: what & so-what.
+   ============================================================ */
+
+.experience-section {
+  padding: 0;
+}
+
+/* Vertical timeline — stacked cards with a line on the left */
+.experience-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+
+/* The continuous vertical line */
+.experience-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--card-border);
+}
+
+/* Each job card */
+.exp-card {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 40px;
+  padding: 32px 0 32px 32px;
+  border-bottom: 1px solid var(--card-border);
+  position: relative;
+  transition: background 0.2s ease;
+}
+
+.exp-card:last-child {
+  border-bottom: none;
+}
+
+.exp-card:hover {
+  background: rgba(0, 255, 0, 0.02);
+}
+
+/* Green dot on the timeline line */
+.exp-card::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 38px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+  border: 2px solid var(--black);
+}
+
+/* ── LEFT META COLUMN ──────────────────────────────────────── */
+.exp-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.exp-company {
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+  color: var(--green);
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+
+.exp-period {
+  font-family: 'Fira Code', monospace;
+  font-size: 11px;
+  color: var(--grey-mid);
+  letter-spacing: 1px;
+}
+
+.exp-location {
+  font-size: 12px;
+  color: var(--grey-mid);
+  margin-bottom: 12px;
+}
+
+/* Tech tags below the meta */
+.exp-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.exp-tag {
+  font-family: 'Fira Code', monospace;
+  font-size: 10px;
+  color: var(--grey-mid);
+  border: 1px solid var(--card-border);
+  padding: 3px 8px;
+  letter-spacing: 0.5px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.exp-card:hover .exp-tag {
+  color: var(--green);
+  border-color: rgba(0, 255, 0, 0.3);
+}
+
+/* ── RIGHT BODY COLUMN ─────────────────────────────────────── */
+.exp-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.exp-role {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--white);
+  line-height: 1.3;
+}
+
+.exp-highlights {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.exp-highlights li {
+  font-size: 14px;
+  color: var(--grey-light);
+  line-height: 1.7;
+  padding-left: 16px;
+  position: relative;
+}
+
+/* Green › bullet */
+.exp-highlights li::before {
+  content: '›';
+  position: absolute;
+  left: 0;
+  color: var(--green);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .exp-card {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding-left: 28px;
+  }
+
+  .experience-timeline::before {
+    left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .exp-card {
+    padding: 24px 0 24px 24px;
+  }
+}

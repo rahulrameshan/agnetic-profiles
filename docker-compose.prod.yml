@@ -1,0 +1,67 @@
+# Everything on one box: database, API, and the web server that fronts both.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Config comes from a .env file beside this one — see .env.prod.example.
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: portfolio
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: portfolio
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portfolio -d portfolio"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Deliberately not published to the host — only the api service reaches it.
+
+  api:
+    build: ./portfolio-agent
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://portfolio:${POSTGRES_PASSWORD}@postgres:5432/portfolio
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY in .env}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      JWT_EXPIRE_DAYS: ${JWT_EXPIRE_DAYS:-7}
+      # Same-origin in production, so this is belt-and-braces rather than load-bearing.
+      ALLOWED_ORIGINS: https://${DOMAIN}
+      CV_STORAGE_DIR: CVs
+    volumes:
+      # Uploaded CVs must outlive the container — without this every redeploy
+      # deletes everyone's document and their pages stop working.
+      - cvdata:/app/CVs
+
+  web:
+    build:
+      context: ./portfolio-ui
+      args:
+        # Relative path: the browser calls the same origin it loaded from.
+        REACT_APP_AGENT_URL: /api
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data      # certificates — losing this re-requests them
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  cvdata:
+  caddy_data:
+  caddy_config:

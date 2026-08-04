@@ -1,0 +1,81 @@
+/* ============================================================
+   ABOUT STYLES
+   The human section. Warm but still technical.
+   Two columns: story on the left, facts on the right.
+   ============================================================ */
+
+/* Two column layout — story and facts side by side */
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: start;
+}
+
+/* Story paragraphs — readable and well spaced */
+.about-story p {
+  color: var(--grey-light);
+  font-size: 16px;
+  line-height: 1.9;
+  margin-bottom: 24px;
+}
+
+/* Green highlight for key numbers and locations */
+.about-highlight {
+  color: var(--green);
+  font-weight: 500;
+}
+
+/* Facts column — each fact is a key-value pair */
+.about-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  border-left: 1px solid var(--card-border);
+  padding-left: 48px;
+}
+
+/* Individual fact row */
+.about-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Label — small, muted, monospace */
+.about-fact-label {
+  font-family: 'Fira Code', monospace;
+  font-size: 11px;
+  color: var(--grey-mid);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+/* Value — white, readable */
+.about-fact-value {
+  font-size: 15px;
+  color: var(--white);
+  font-weight: 500;
+}
+
+/* Available status — green dot signals availability */
+.about-available {
+  color: var(--green) !important;
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .about-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .about-facts {
+    border-left: none;
+    border-top: 1px solid var(--card-border);
+    padding-left: 0;
+    padding-top: 40px;
+  }
+}

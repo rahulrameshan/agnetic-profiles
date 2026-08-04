@@ -1,0 +1,140 @@
+/* ============================================================
+   HERO STYLES
+   The opening act. Bold, clear, and confident.
+   Every line here earns its place.
+   ============================================================ */
+
+/* Full viewport height — the hero owns the screen */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 24px;
+
+  /* Subtle radial glow from top — gives depth without distraction */
+  background: radial-gradient(ellipse at top, #0d1a0d 0%, #0a0a0a 70%);
+}
+
+/* The terminal prompt before the name */
+.hero-greeting {
+  font-family: 'Fira Code', monospace;
+  font-size: 16px;
+  color: var(--green);
+  letter-spacing: 3px;
+  margin-bottom: 16px;
+
+  /* Blinking cursor effect on the greeting */
+  animation: blink 1.2s step-end infinite;
+}
+
+/* The name — largest element on the page */
+.hero-name {
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(42px, 9vw, 80px);
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 16px;
+  line-height: 1.1;
+
+  /* Subtle text glow */
+  text-shadow: 0 0 40px rgba(255, 255, 255, 0.1);
+}
+
+/* Role description — calm and readable */
+.hero-title {
+  font-family: 'Fira Code', monospace;
+  font-size: clamp(14px, 2.5vw, 20px);
+  font-weight: 400;
+  color: var(--grey-light);
+  margin-bottom: 24px;
+  letter-spacing: 1px;
+}
+
+/* The hook line — green draws the eye to the number */
+.hero-tagline {
+  font-family: 'Fira Code', monospace;
+  font-size: 16px;
+  color: var(--grey-light);
+  margin-bottom: 12px;
+}
+
+/* The 40M+ number — make it impossible to miss */
+.hero-highlight {
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* Location + availability — small but critical for EU hiring */
+.hero-location {
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+  color: var(--grey-mid);
+  margin-bottom: 48px;
+  letter-spacing: 1px;
+}
+
+/* Button row */
+.hero-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Base button — shared between primary and secondary */
+.btn {
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 14px 36px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Primary — solid green fill */
+.btn-primary {
+  background-color: var(--green);
+  color: #000;
+  font-weight: 700;
+  border: 2px solid var(--green);
+}
+
+.btn-primary:hover {
+  background-color: transparent;
+  color: var(--green);
+}
+
+/* Secondary — outlined */
+.btn-secondary {
+  background-color: transparent;
+  color: var(--green);
+  border: 1px solid var(--green);
+}
+
+.btn-secondary:hover {
+  background-color: var(--green-glow);
+}
+
+/* Blinking cursor keyframe */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .hero-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .btn {
+    width: 100%;
+    text-align: center;
+  }
+}

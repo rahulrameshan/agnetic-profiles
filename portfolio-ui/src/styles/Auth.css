@@ -1,0 +1,364 @@
+/*
+ * Auth.css
+ * --------
+ * Shared styling for landing, login, signup, dashboard and settings.
+ * Keeps the terminal aesthetic: mono type, accent on background.
+ *
+ * All colours come from the theme tokens set by theme.js, so a user's chosen
+ * colour flows through here without any per-rule changes.
+ */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--theme-bg);
+  color: var(--theme-accent);
+  font-family: monospace;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid var(--theme-accent);
+  padding: 28px;
+}
+
+.auth-title {
+  font-size: 20px;
+  letter-spacing: 3px;
+  margin: 0 0 4px;
+}
+
+.auth-subtitle {
+  opacity: 0.6;
+  font-size: 13px;
+  margin: 0 0 22px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+}
+
+.auth-label {
+  font-size: 12px;
+  letter-spacing: 1px;
+  opacity: 0.8;
+  margin-bottom: 6px;
+}
+
+.auth-input {
+  background-color: var(--theme-bg);
+  color: var(--theme-body);
+  border: 1px solid var(--theme-control);
+  outline: none;
+  font-family: monospace;
+  font-size: 15px;
+  padding: 7px 4px;
+}
+
+.auth-input:focus {
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 2px var(--theme-control-soft);
+}
+
+.auth-hint {
+  font-size: 11px;
+  opacity: 0.5;
+  margin-top: 5px;
+}
+
+.auth-btn {
+  width: 100%;
+  background-color: var(--theme-bg);
+  color: var(--theme-control);
+  border: 1px solid var(--theme-control);
+  font-family: monospace;
+  font-size: 14px;
+  letter-spacing: 2px;
+  padding: 10px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.auth-btn:hover:not(:disabled) {
+  background-color: var(--theme-control);
+  color: var(--theme-bg);
+}
+
+.auth-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.auth-error {
+  border-left: 2px solid var(--theme-error);
+  color: var(--theme-error);
+  padding-left: 10px;
+  font-size: 13px;
+  margin: 12px 0;
+}
+
+/* ── Landing ───────────────────────────────────────── */
+
+.landing-card {
+  max-width: 520px;
+}
+
+.landing-steps {
+  list-style: none;
+  margin: 24px 0 4px;
+  padding: 0;
+}
+
+.landing-step {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 13px;
+  line-height: 1.7;
+  margin-bottom: 10px;
+}
+
+.landing-step-n {
+  color: var(--theme-accent);
+  opacity: 0.6;
+  letter-spacing: 1px;
+}
+
+.landing-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+
+/* Anchors styled as buttons need the sizing and text resets. */
+.landing-action {
+  flex: 1;
+  min-width: 160px;
+  width: auto;
+  margin-top: 0;
+  text-align: center;
+  text-decoration: none;
+}
+
+.auth-note {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 18px;
+  text-align: center;
+}
+
+.auth-link {
+  color: var(--theme-accent);
+}
+
+/* ── Dashboard ─────────────────────────────────────── */
+
+.dashboard-page {
+  min-height: 100vh;
+  background-color: var(--theme-bg);
+  color: var(--theme-accent);
+  font-family: monospace;
+  padding: 40px 24px;
+  box-sizing: border-box;
+}
+
+.dashboard-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--theme-accent);
+  padding-bottom: 14px;
+  margin-bottom: 26px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dashboard-panel {
+  border: 1px solid var(--theme-accent);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.dashboard-panel-title {
+  font-size: 13px;
+  letter-spacing: 2px;
+  opacity: 0.8;
+  margin: 0 0 14px;
+}
+
+.dashboard-status {
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.dashboard-status--ready  { color: var(--theme-accent); }
+/* Muted rather than accent, so "working" reads differently from "done". */
+.dashboard-status--pending{ color: var(--theme-muted); }
+.dashboard-status--failed { color: var(--theme-error); }
+.dashboard-status--empty  { opacity: 0.6; }
+
+.cv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--theme-border);
+  padding: 9px 0;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.cv-row:last-child { border-bottom: none; }
+
+.cv-active-tag {
+  border: 1px solid var(--theme-accent);
+  padding: 1px 7px;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.dashboard-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Used on both <button> and react-router <Link>, hence the anchor resets. */
+.cv-activate-btn {
+  background: none;
+  color: var(--theme-control);
+  border: 1px solid var(--theme-control);
+  font-family: monospace;
+  font-size: 11px;
+  padding: 3px 9px;
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: none;
+  line-height: normal;
+}
+
+.cv-activate-btn:hover {
+  background-color: var(--theme-control);
+  color: var(--theme-bg);
+}
+
+/* Navigation, not an action — no box, just text that responds.
+ * Form controls keep their borders; nav stays out of the way. */
+.nav-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--theme-accent);
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  text-decoration: none;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.nav-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* ── Directory ─────────────────────────────────────── */
+
+.directory-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+/* Each card renders in its owner's own colours — a preview of their page. */
+.directory-card {
+  border: 1px solid;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-decoration: none;
+  font-family: monospace;
+  transition: transform 0.15s ease;
+}
+
+.directory-card:hover {
+  transform: translateY(-2px);
+}
+
+.directory-name {
+  font-size: 15px;
+  letter-spacing: 1px;
+}
+
+.directory-headline {
+  font-size: 12px;
+}
+
+.directory-meta {
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+/* ── Colour picker ─────────────────────────────────── */
+
+.color-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+/* Each swatch previews itself: its own accent on its own derived background,
+ * so the readability promise is visible before anything is selected. */
+.color-swatch {
+  width: 44px;
+  height: 34px;
+  border: 1px solid;
+  font-family: monospace;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-swatch--active {
+  outline: 2px solid var(--theme-accent);
+  outline-offset: 2px;
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.color-input {
+  width: 46px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--theme-control);
+  background: none;
+  cursor: pointer;
+}
+
+.color-save {
+  width: auto;
+  margin-top: 0;
+  padding: 6px 16px;
+  font-size: 11px;
+}

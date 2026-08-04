@@ -1,0 +1,58 @@
+/* ============================================================
+   IMPACT STYLES
+   Six cards. Six numbers. Each one earns its place.
+   The grid speaks before the recruiter reads a word.
+   ============================================================ */
+
+/* 3 columns on desktop, 2 on tablet, 1 on mobile */
+.impact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+/* Each stat card */
+.impact-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+/* Hover — card lifts and border glows green */
+.impact-card:hover {
+  border-color: var(--green);
+  transform: translateY(-4px);
+}
+
+/* The big number — green, bold, impossible to miss */
+.impact-value {
+  font-family: 'Fira Code', monospace;
+  font-size: clamp(36px, 5vw, 52px);
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+}
+
+/* Description below the number — muted and small */
+.impact-label {
+  font-size: 14px;
+  color: var(--grey-light);
+  line-height: 1.5;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .impact-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .impact-grid {
+    grid-template-columns: 1fr;
+  }
+}

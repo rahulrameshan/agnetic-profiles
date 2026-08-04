@@ -1,0 +1,80 @@
+/* ============================================================
+   GLOBAL STYLES
+   The foundation everything else builds upon.
+   Think of this as the soil before the garden.
+   ============================================================ */
+
+/* Import a clean monospace font from Google */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Reset browser defaults so we start from zero */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Base document styles */
+html {
+  scroll-behavior: smooth; /* smooth scrolling between sections */
+}
+
+body {
+  background-color: var(--black);
+  color: var(--white);
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased; /* sharper text on Mac */
+}
+
+/* Typography scale — consistent sizing across all sections */
+h1 { font-size: clamp(40px, 8vw, 72px); font-weight: 700; }
+h2 { font-size: clamp(28px, 5vw, 48px); font-weight: 600; }
+h3 { font-size: clamp(20px, 3vw, 28px); font-weight: 500; }
+p  { font-size: 16px; line-height: 1.8; }
+
+/* Reusable section wrapper — every section uses this */
+.section {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 100px 24px;
+}
+
+/* Section title — the green label above each heading */
+.section-label {
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+  color: var(--green);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: block;
+}
+
+/* Section heading */
+.section-title {
+  font-size: clamp(28px, 5vw, 42px);
+  color: var(--white);
+  margin-bottom: 48px;
+}
+
+/* Divider line between sections */
+.divider {
+  border: none;
+  border-top: 1px solid var(--card-border);
+  margin: 0;
+}
+
+/* Colour tokens */
+:root {
+  --green:       #00ff00;
+  --green-dim:   #00cc00;
+  --green-glow:  rgba(0, 255, 0, 0.1);
+  --white:       #ffffff;
+  --grey-light:  #aaaaaa;
+  --grey-mid:    #666666;
+  --grey-dark:   #333333;
+  --black:       #0a0a0a;
+  --card-bg:     #111111;
+  --card-border: #1e1e1e;
+}

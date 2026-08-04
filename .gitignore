@@ -1,0 +1,25 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.prod.example
+
+# CV documents. These contain real personal data (phone numbers, addresses).
+# Once committed they live in git history forever, even if deleted later.
+*.pdf
+CVs/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Node
+node_modules/
+build/
+coverage/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/

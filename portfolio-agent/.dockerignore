@@ -1,0 +1,9 @@
+.venv
+__pycache__
+*.pyc
+.git
+.idea
+.env
+CVs/
+*.pdf
+alembic/versions/__pycache__

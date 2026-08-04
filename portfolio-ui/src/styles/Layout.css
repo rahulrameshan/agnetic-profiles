@@ -1,0 +1,182 @@
+/* ============================================================
+   LAYOUT STYLES
+   The skeleton of the entire portfolio.
+   Two panels. Fixed height. No page scroll.
+   Left stays. Right swaps.
+   ============================================================ */
+
+/* Root layout — full viewport, two columns, no overflow */
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--black);
+}
+
+/* ── LEFT SIDEBAR ───────────────────────────────────────── */
+.sidebar {
+  height: 100vh;
+  border-right: 1px solid var(--card-border);
+  display: flex;
+  flex-direction: column;
+  padding: 48px 32px;
+  overflow-y: auto;
+  background-color: var(--card-bg);
+}
+
+/* Identity block — name, role, status */
+.sidebar-identity {
+  margin-bottom: 48px;
+}
+
+.sidebar-greeting {
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  color: var(--green);
+  letter-spacing: 3px;
+  margin-bottom: 12px;
+}
+
+.sidebar-name {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+
+.sidebar-role {
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  color: var(--grey-mid);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+/* Green dot status indicator */
+.sidebar-status {
+  display: inline-block;
+  font-family: 'Fira Code', monospace;
+  font-size: 11px;
+  color: var(--green);
+  margin-top: 16px;
+  letter-spacing: 1px;
+}
+
+/* ── NAVIGATION ─────────────────────────────────────────── */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+/* Each nav button */
+.nav-item {
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+  color: var(--grey-mid);
+  padding: 7px 0;
+  cursor: pointer;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: color 0.2s ease;
+}
+
+.nav-item:hover {
+  color: var(--white);
+}
+
+/* Active nav item — green border and text */
+.nav-item--active {
+  color: var(--green);
+}
+
+/* The > arrow before each nav item */
+.nav-arrow {
+  color: var(--green);
+  margin-right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.nav-item:hover .nav-arrow,
+.nav-item--active .nav-arrow {
+  opacity: 1;
+}
+
+/* Chat button — pinned to bottom of sidebar */
+.sidebar-chat-btn {
+  margin-top: 32px;
+  background: none;
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  text-align: left;
+}
+
+.sidebar-chat-btn:hover {
+  background-color: var(--green-glow);
+}
+
+.sidebar-chat-btn--active {
+  background-color: var(--green-glow);
+  border-style: solid;
+}
+
+/* ── RIGHT CONTENT PANEL ────────────────────────────────── */
+.content {
+  height: 100vh;
+  overflow-y: auto;       /* only the right panel scrolls if needed */
+  padding: 48px 64px;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .layout {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: auto;
+  }
+
+  .sidebar {
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  .content {
+    height: auto;
+    padding: 32px 24px;
+  }
+}
+
+/* Top-of-sidebar navigation, above the identity, so getting elsewhere is the
+ * first thing available rather than the last. */
+.sidebar-topnav {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.sidebar-home {
+  font-family: 'Fira Code', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--grey-mid);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.sidebar-home:hover {
+  color: var(--green);
+}
