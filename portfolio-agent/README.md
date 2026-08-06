@@ -57,7 +57,7 @@ profile. Override with `SEED_USERNAME`, `SEED_EMAIL`, `SEED_CV`, etc. Re-running
 Then start the API:
 
 ```bash
-.venv/bin/uvicorn api:app --reload --port 8000
+.venv/bin/uvicorn app.main:app --reload --port 8000
 ```
 
 Interactive docs at http://localhost:8000/docs.
@@ -75,19 +75,46 @@ Interactive docs at http://localhost:8000/docs.
 No account is privileged. Every portfolio — including whoever runs the site — is
 served from `/u/{username}`; there is no single-tenant route.
 
-## How it fits together
+## Structure
 
-`storage.py` validates an upload (PDF magic bytes, 10 MB, 30 pages) and writes it under
-`CVs/<user-uuid>/`. The directory is keyed on the UUID rather than the username so nothing
-the user types can steer a path. Extracted text is cached on the `cvs` row, so the PDF is
-parsed once at upload rather than on every chat turn.
+Dependencies point one way: routes → services → repositories/adapters. A layer never
+imports the one above it, which is checked mechanically — services contain no `fastapi`,
+no `sqlalchemy` and no `openai` import.
 
-`extractor.py` then runs in a `BackgroundTasks` job, calling the model with a strict JSON
-schema that mirrors the props the React components already consume. The profile row moves
-`pending → ready | failed`, which is why the dashboard polls.
+```
+app/
+  main.py            assembles the app; contains no rules
+  config.py          every environment variable, in one place
+  errors.py          domain errors (NotFound, InvalidCV, LimitReached, …)
+  prompts.py         how the agent must behave — a business rule, edited often
+  profile_schema.py  what a generated profile IS
+  models.py          SQLAlchemy tables
+  schemas.py         request/response DTOs
+  security.py        password hashing, token issuing (pure functions)
+  repositories.py    every SQL query, plus the UnitOfWork
+  services/          business rules — the layer worth reading first
+    accounts.py        register, authenticate, edit, directory
+    cvs.py             replace, roll back, correct a profile
+    generation.py      regenerate page content from a CV
+    chat.py            one conversational turn, and its limits
+  adapters/          the outside world
+    pdf.py             validate, store, extract text
+    llm.py             answer a question, extract a profile
+    github.py          the fetch_github tool and its schema
+  api/               HTTP only
+    deps.py            bearer header → User, session → UnitOfWork
+    errors.py          domain error → status code, in one table
+    auth.py me.py public.py
+```
 
-`agent.py` rebuilds the system prompt from the *current* CV on every turn, so replacing a
-CV takes effect mid-conversation instead of going stale.
+Services take a `UnitOfWork` rather than a database session, so they never touch
+SQLAlchemy. They raise domain errors rather than `HTTPException`, so a rule change can't
+alter a status code and a status code change can't alter a rule.
+
+Two behaviours worth knowing, both deliberate: `pdf.store` deletes the file it just wrote
+if no text can be extracted, so an unreadable upload leaves nothing behind; and
+`llm.answer_question` rebuilds the system prompt from the *current* CV on every turn, so
+replacing a CV takes effect mid-conversation instead of going stale.
 
 ## Things worth knowing
 

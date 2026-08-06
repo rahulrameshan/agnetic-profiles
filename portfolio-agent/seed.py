@@ -1,29 +1,25 @@
 """
 seed.py
 -------
-Creates the owner account for the existing single-tenant portfolio and attaches
-RR.pdf as its active CV, so /u/rahul works straight after migrating.
+Creates an account from the command line and attaches a CV to it.
 
-The password is read from SEED_PASSWORD — never hardcode one here.
+Now that no account is privileged this is only a convenience — signing up
+through the UI does the same thing. Useful for bootstrapping a fresh database.
 
-    SEED_PASSWORD='...' .venv/bin/python seed.py
+    SEED_PASSWORD='...' uv run python seed.py
 
+The password is read from the environment; never hardcode one here.
 Re-running is safe: an existing account is left alone.
 """
 
 import os
 import sys
 
-from dotenv import load_dotenv
-from sqlalchemy import select
-
-from auth import hash_password
-from db import SessionLocal
-from extractor import run_extraction
-from models import CV, Profile, User
-from storage import InvalidCV, store_cv
-
-load_dotenv()
+from app.db import SessionLocal
+from app.errors import DomainError
+from app.repositories import UnitOfWork
+from app.services import accounts, cvs
+from app.services.generation import regenerate
 
 USERNAME = os.getenv("SEED_USERNAME", "rahul")
 EMAIL = os.getenv("SEED_EMAIL", "rahulrameshan82@gmail.com")
@@ -35,11 +31,8 @@ CV_FILE = os.getenv("SEED_CV", "RR.pdf")
 
 def main() -> int:
     password = os.getenv("SEED_PASSWORD")
-    if not password:
-        print("SEED_PASSWORD is not set. Re-run with SEED_PASSWORD='...' set.")
-        return 1
-    if len(password) < 8:
-        print("SEED_PASSWORD must be at least 8 characters.")
+    if not password or len(password) < 8:
+        print("Set SEED_PASSWORD to at least 8 characters and re-run.")
         return 1
 
     cv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), CV_FILE)
@@ -49,18 +42,19 @@ def main() -> int:
 
     db = SessionLocal()
     try:
-        user = db.scalar(select(User).where(User.username == USERNAME))
+        uow = UnitOfWork(db)
+
+        user = uow.users.find_by_username(USERNAME)
         if user is None:
-            user = User(
+            user, _ = accounts.register(
+                uow,
                 username=USERNAME,
                 email=EMAIL,
-                password_hash=hash_password(password),
+                password=password,
                 display_name=DISPLAY_NAME,
                 headline=HEADLINE,
                 location=LOCATION,
             )
-            db.add(user)
-            db.flush()
             print(f"Created user '{USERNAME}'.")
         else:
             print(f"User '{USERNAME}' already exists — leaving it as is.")
@@ -69,45 +63,29 @@ def main() -> int:
             contents = f.read()
 
         try:
-            stored_path, text = store_cv(user.id, contents, os.path.basename(cv_path))
-        except InvalidCV as e:
-            print(f"Could not use {CV_FILE}: {e}")
+            # Generate inline rather than in the background: this is a script,
+            # and there is no response to return before the work is done.
+            cv = cvs.replace(
+                uow,
+                user,
+                contents=contents,
+                filename=os.path.basename(cv_path),
+                schedule=lambda *_: None,
+            )
+        except DomainError as e:
+            print(f"Could not use {CV_FILE}: {e.message}")
             return 1
 
-        db.query(CV).filter(CV.user_id == user.id, CV.is_active.is_(True)).update(
-            {"is_active": False}
-        )
-
-        cv = CV(
-            user_id=user.id,
-            original_filename=os.path.basename(cv_path),
-            stored_path=stored_path,
-            size_bytes=len(contents),
-            extracted_text=text,
-            is_active=True,
-        )
-        db.add(cv)
-        db.flush()
-
-        profile = db.scalar(select(Profile).where(Profile.user_id == user.id))
-        if profile is None:
-            profile = Profile(user_id=user.id)
-            db.add(profile)
-        profile.cv_id = cv.id
-        profile.status = "pending"
-        profile.error = None
-
-        db.commit()
         user_id, cv_id = user.id, cv.id
     finally:
         db.close()
 
-    print(f"Attached {CV_FILE} as the active CV. Generating profile...")
-    run_extraction(user_id, cv_id)
+    print(f"Attached {CV_FILE}. Generating profile...")
+    regenerate(user_id, cv_id)
 
     db = SessionLocal()
     try:
-        profile = db.scalar(select(Profile).where(Profile.user_id == user_id))
+        profile = UnitOfWork(db).profiles.for_user(user_id)
         print(f"Profile status: {profile.status}")
         if profile.status == "failed":
             print(f"  error: {profile.error}")

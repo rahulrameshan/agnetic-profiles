@@ -1,0 +1,171 @@
+"""
+Persistence. Every SQL query in the application lives here.
+
+Repositories expose intention-revealing methods ("the active CV for this owner")
+rather than query builders, so the services above them read as business rules
+instead of joins. The UnitOfWork bundles them with the transaction boundary, so
+a service never touches a Session and never imports SQLAlchemy.
+"""
+
+import uuid
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from app.models import CV, ChatMessage, ChatSession, Profile, User
+
+
+class UserRepository:
+    def __init__(self, db: Session):
+        self._db = db
+
+    def get(self, user_id: uuid.UUID) -> User | None:
+        return self._db.get(User, user_id)
+
+    def find_by_username(self, username: str) -> User | None:
+        return self._db.scalar(select(User).where(User.username == username.lower()))
+
+    def find_by_email(self, email: str) -> User | None:
+        return self._db.scalar(select(User).where(User.email == email))
+
+    def exists_with_username_or_email(self, username: str, email: str) -> bool:
+        found = self._db.scalar(
+            select(User.id).where((User.username == username) | (User.email == email))
+        )
+        return found is not None
+
+    def add(self, user: User) -> User:
+        self._db.add(user)
+        self._db.flush()
+        return user
+
+    def list_active_with_profile_status(
+        self, limit: int = 200
+    ) -> list[tuple[User, str | None]]:
+        """The public directory read model: each user plus their profile status."""
+        rows = self._db.execute(
+            select(User, Profile.status)
+            .join(Profile, Profile.user_id == User.id, isouter=True)
+            .where(User.is_active.is_(True))
+            .order_by(User.created_at.desc())
+            .limit(limit)
+        ).all()
+        return [(user, status) for user, status in rows]
+
+
+class CVRepository:
+    def __init__(self, db: Session):
+        self._db = db
+
+    def get(self, cv_id: uuid.UUID) -> CV | None:
+        return self._db.get(CV, cv_id)
+
+    def active_for(self, user_id: uuid.UUID) -> CV | None:
+        return self._db.scalar(
+            select(CV).where(CV.user_id == user_id, CV.is_active.is_(True))
+        )
+
+    def list_for(self, user_id: uuid.UUID) -> list[CV]:
+        return list(
+            self._db.scalars(
+                select(CV).where(CV.user_id == user_id).order_by(CV.created_at.desc())
+            )
+        )
+
+    def deactivate_all_for(self, user_id: uuid.UUID) -> None:
+        """Older CVs stay on record; they just stop being the live one."""
+        self._db.query(CV).filter(
+            CV.user_id == user_id, CV.is_active.is_(True)
+        ).update({"is_active": False})
+
+    def add(self, cv: CV) -> CV:
+        self._db.add(cv)
+        self._db.flush()
+        return cv
+
+
+class ProfileRepository:
+    def __init__(self, db: Session):
+        self._db = db
+
+    def for_user(self, user_id: uuid.UUID) -> Profile | None:
+        return self._db.scalar(select(Profile).where(Profile.user_id == user_id))
+
+    def get_or_create(self, user_id: uuid.UUID) -> Profile:
+        profile = self.for_user(user_id)
+        if profile is None:
+            profile = Profile(user_id=user_id, data={}, status="empty")
+            self._db.add(profile)
+            self._db.flush()
+        return profile
+
+
+class ChatRepository:
+    def __init__(self, db: Session):
+        self._db = db
+
+    def find_session(
+        self, owner_id: uuid.UUID, visitor_token: str
+    ) -> ChatSession | None:
+        return self._db.scalar(
+            select(ChatSession).where(
+                ChatSession.owner_user_id == owner_id,
+                ChatSession.visitor_token == visitor_token,
+            )
+        )
+
+    def start_session(self, owner_id: uuid.UUID, visitor_token: str) -> ChatSession:
+        session = ChatSession(owner_user_id=owner_id, visitor_token=visitor_token)
+        self._db.add(session)
+        self._db.flush()
+        return session
+
+    def history(self, session: ChatSession) -> list[dict]:
+        """Prior messages as raw OpenAI dicts, oldest first."""
+        return [message.raw for message in session.messages]
+
+    def append(self, session: ChatSession, messages: list[dict]) -> None:
+        for raw in messages:
+            self._db.add(
+                ChatMessage(
+                    session_id=session.id,
+                    role=raw.get("role", "assistant"),
+                    raw=raw,
+                )
+            )
+
+    def count_visitor_messages_today(self, owner_id: uuid.UUID) -> int:
+        since = datetime.now(timezone.utc) - timedelta(days=1)
+        total = self._db.scalar(
+            select(func.count(ChatMessage.id))
+            .join(ChatSession, ChatMessage.session_id == ChatSession.id)
+            .where(
+                ChatSession.owner_user_id == owner_id,
+                ChatMessage.role == "user",
+                ChatMessage.created_at >= since,
+            )
+        )
+        return total or 0
+
+
+class UnitOfWork:
+    """
+    One transaction, and the repositories that participate in it.
+
+    Services depend on this and nothing else from the persistence side, which is
+    what keeps them free of SQLAlchemy.
+    """
+
+    def __init__(self, db: Session):
+        self._db = db
+        self.users = UserRepository(db)
+        self.cvs = CVRepository(db)
+        self.profiles = ProfileRepository(db)
+        self.chats = ChatRepository(db)
+
+    def commit(self) -> None:
+        self._db.commit()
+
+    def refresh(self, instance) -> None:
+        self._db.refresh(instance)
