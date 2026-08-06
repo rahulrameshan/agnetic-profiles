@@ -10,8 +10,9 @@ from alembic import context
 # Project root on sys.path so `db` / `models` import the same way the app does.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from db import DATABASE_URL, Base  # noqa: E402
-import models  # noqa: E402,F401  (imported for its side effect: registering tables)
+from app.config import settings  # noqa: E402
+from app.db import Base  # noqa: E402
+import app.models  # noqa: E402,F401  (imported for its side effect: registering tables)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -19,7 +20,7 @@ config = context.config
 
 # The connection string lives in .env, not alembic.ini — keeps credentials
 # out of a committed file and the app and migrations pointed at one place.
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

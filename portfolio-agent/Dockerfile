@@ -26,4 +26,4 @@ RUN uv sync --frozen
 EXPOSE 8000
 
 # Migrations run on boot, so a deploy never serves against an old schema.
-CMD ["sh", "-c", "uv run alembic upgrade head && uv run uvicorn api:app --host 0.0.0.0 --port 8000 --workers 1"]
+CMD ["sh", "-c", "uv run alembic upgrade head && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1"]

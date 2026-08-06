@@ -1,31 +1,29 @@
 """
-extractor.py
-------------
-Turns a CV into the structured content the public page renders.
+What a generated profile *is*.
 
-The schema deliberately mirrors the props the React section components already
-consume (stats -> {value,label}, experience -> {company,role,period,...}), so
-generated data drops straight into the existing markup and CSS.
+This is a business definition, not a vendor detail: the shape mirrors the props
+the page components consume, so generated content drops straight into the
+existing markup. Change this and you change the product, not the plumbing.
 
-Two hard rules live in the prompt:
-  * omit anything the CV doesn't state — never invent a metric or an employer
-  * never emit contact details; this payload is served to anonymous visitors
+Two rules carry real weight in the prompt — omit what the CV doesn't state, and
+never emit contact details, because this payload is served to anonymous visitors.
 
-The dev-setup card from the hand-written Skills page has no equivalent here on
-purpose: a CV doesn't say which laptop someone owns.
+Project card sizing is deliberately absent: that is layout, decided by the
+frontend, not a fact about the candidate.
 """
-
-import json
-from datetime import datetime, timezone
-
-from agent import MODEL, client
-from db import SessionLocal
-from models import CV, Profile
 
 PROFILE_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
-    "required": ["headline", "location", "about", "stats", "skills", "experience", "projects"],
+    "required": [
+        "headline",
+        "location",
+        "about",
+        "stats",
+        "skills",
+        "experience",
+        "projects",
+    ],
     "properties": {
         "headline": {
             "type": "string",
@@ -68,7 +66,10 @@ PROFILE_SCHEMA = {
                 "additionalProperties": False,
                 "required": ["value", "label"],
                 "properties": {
-                    "value": {"type": "string", "description": "Short figure, e.g. '40M+', '7K/s', '9+'."},
+                    "value": {
+                        "type": "string",
+                        "description": "Short figure, e.g. '40M+', '7K/s', '9+'.",
+                    },
                     "label": {"type": "string", "description": "What the figure measures."},
                 },
             },
@@ -84,7 +85,14 @@ PROFILE_SCHEMA = {
             "items": {
                 "type": "object",
                 "additionalProperties": False,
-                "required": ["company", "role", "period", "location", "stack", "highlights"],
+                "required": [
+                    "company",
+                    "role",
+                    "period",
+                    "location",
+                    "stack",
+                    "highlights",
+                ],
                 "properties": {
                     "company": {"type": "string"},
                     "role": {"type": "string"},
@@ -134,50 +142,3 @@ Rules:
 CV:
 {cv_text}
 """
-
-
-def generate_profile(cv_text: str) -> dict:
-    """Call the model and return the structured profile. Raises on failure."""
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=[{"role": "user", "content": EXTRACTION_PROMPT.format(cv_text=cv_text)}],
-        response_format={
-            "type": "json_schema",
-            "json_schema": {
-                "name": "portfolio_profile",
-                "strict": True,
-                "schema": PROFILE_SCHEMA,
-            },
-        },
-    )
-    return json.loads(response.choices[0].message.content)
-
-
-def run_extraction(user_id, cv_id) -> None:
-    """
-    Background task: generate a profile and record the outcome.
-
-    Opens its own session — background tasks run after the response is sent, by
-    which point the request-scoped session is already closed.
-    """
-    db = SessionLocal()
-    try:
-        profile = db.query(Profile).filter(Profile.user_id == user_id).one_or_none()
-        cv = db.get(CV, cv_id)
-
-        if profile is None or cv is None:
-            return
-
-        try:
-            data = generate_profile(cv.extracted_text)
-            profile.data = data
-            profile.status = "ready"
-            profile.error = None
-            profile.generated_at = datetime.now(timezone.utc)
-        except Exception as e:
-            profile.status = "failed"
-            profile.error = str(e)[:1000]
-
-        db.commit()
-    finally:
-        db.close()
