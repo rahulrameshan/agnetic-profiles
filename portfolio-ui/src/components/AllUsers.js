@@ -9,9 +9,14 @@
 
 import { Link } from "react-router-dom";
 import UserList from "./UserList";
+import useTheme from "../useTheme";
+import { SITE_THEME_COLOR } from "../theme";
 import "../styles/Auth.css";
 
 function AllUsers() {
+  /* A shared page belonging to no single user. */
+  useTheme(SITE_THEME_COLOR);
+
   return (
     <div className="dashboard-page">
       <div className="dashboard-inner">

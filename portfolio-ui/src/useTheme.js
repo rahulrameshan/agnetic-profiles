@@ -9,11 +9,13 @@
  */
 
 import { useEffect } from "react";
-import { applyTheme, DEFAULT_THEME_COLOR } from "./theme";
+import { applyTheme, SITE_THEME_COLOR } from "./theme";
 
 export default function useTheme(color) {
   useEffect(() => {
-    applyTheme(color || DEFAULT_THEME_COLOR);
-    return () => applyTheme(DEFAULT_THEME_COLOR);
+    applyTheme(color || SITE_THEME_COLOR);
+    /* Reset to the site's own colours, not a user's — leaving a purple profile
+     * should land you on a neutral page, not a purple one. */
+    return () => applyTheme(SITE_THEME_COLOR);
   }, [color]);
 }

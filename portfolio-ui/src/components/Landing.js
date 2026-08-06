@@ -10,6 +10,8 @@
 
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import useTheme from "../useTheme";
+import { SITE_THEME_COLOR } from "../theme";
 import "../styles/Auth.css";
 
 const STEPS = [
@@ -20,6 +22,9 @@ const STEPS = [
 
 function Landing() {
   const { user, loading } = useAuth();
+
+  /* No owner here, so the page wears the site's own colours. */
+  useTheme(SITE_THEME_COLOR);
 
   return (
     <div className="auth-page">

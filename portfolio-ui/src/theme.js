@@ -14,6 +14,15 @@
 
 export const DEFAULT_THEME_COLOR = "#00ff00";
 
+/*
+ * The theme for pages that belong to nobody — landing, login, signup.
+ *
+ * Those pages have no owner whose colour to borrow, so they get the site's own
+ * identity: black on light. Deliberately not the default green, which is a
+ * per-user starting point rather than the product's own look.
+ */
+export const SITE_THEME_COLOR = "#000000";
+
 const AA_TARGET = 7;      // comfortable — AAA for body text
 const MIN_CONTRAST = 4.5; // hard floor — WCAG AA
 

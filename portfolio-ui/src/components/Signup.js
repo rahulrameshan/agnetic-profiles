@@ -9,11 +9,15 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { errorMessage } from "../api/client";
+import useTheme from "../useTheme";
+import { SITE_THEME_COLOR } from "../theme";
 import "../styles/Auth.css";
 
 function Signup() {
   const { signup } = useAuth();
   const navigate = useNavigate();
+
+  useTheme(SITE_THEME_COLOR);
 
   const [form, setForm] = useState({
     username: "",

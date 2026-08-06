@@ -65,8 +65,30 @@ p  { font-size: 16px; line-height: 1.8; }
   margin: 0;
 }
 
-/* Colour tokens */
+/* Colour tokens
+   ------------------------------------------------------------
+   The --theme-* set is normally written onto :root at runtime by
+   theme.js. These are the static fallbacks for the moment before
+   that happens, and for any page that never applies a theme.
+
+   They must exist. A missing custom property makes the whole
+   declaration invalid, so `border: 1px solid var(--theme-control)`
+   silently renders NO border rather than a wrong one — which is
+   exactly how the signup page lost every input outline.
+
+   Values are buildPalette("#000000"): black on light, the site's
+   own identity for pages that belong to no user. */
 :root {
+  --theme-accent:       #000000;
+  --theme-bg:           #f0f0f0;
+  --theme-surface:      #e5e5e5;
+  --theme-border:       #d3d3d3;
+  --theme-body:         #0e0e0e;
+  --theme-muted:        #545454;
+  --theme-error:        #b00020;
+  --theme-control:      #4a5158;
+  --theme-control-soft: #c7c8ca;
+
   --green:       #00ff00;
   --green-dim:   #00cc00;
   --green-glow:  rgba(0, 255, 0, 0.1);
