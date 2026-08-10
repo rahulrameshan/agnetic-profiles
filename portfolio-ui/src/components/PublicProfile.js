@@ -72,10 +72,8 @@ function PublicProfile() {
   const data = useMemo(() => profile?.data || {}, [profile]);
 
   const renderSection = () => {
-    if (chatOpen) {
-      return <Chat sessionId={sessionId.current} username={username} />;
-    }
-
+    /* The agent is no longer a section — it floats over the page, so a visitor
+     * can read a section and ask about it at the same time. */
     if (profile.status === "pending") {
       return (
         <section className="section">
@@ -160,7 +158,7 @@ function PublicProfile() {
             <button
               key={item}
               className={`nav-item ${activeSection === item ? "nav-item--active" : ""}`}
-              onClick={() => { setActiveSection(item); setChatOpen(false); }}
+              onClick={() => setActiveSection(item)}
             >
               <span className="nav-arrow">&gt;</span> {item}
             </button>
@@ -180,6 +178,16 @@ function PublicProfile() {
       <main className="content">
         {renderSection()}
       </main>
+
+      {/* Floats bottom-right, above the page rather than instead of it. */}
+      {chatOpen && (
+        <Chat
+          sessionId={sessionId.current}
+          username={username}
+          ownerName={profile.display_name}
+          onClose={() => setChatOpen(false)}
+        />
+      )}
 
     </div>
   );

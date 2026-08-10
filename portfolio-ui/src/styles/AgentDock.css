@@ -1,0 +1,325 @@
+/* ============================================================
+   AGENT DOCK
+   The CV agent, docked bottom-right.
+
+   Same visual language as the message dock (top-right) but
+   hinged on the opposite corner, so the two never collide and
+   each rises from the edge it belongs to.
+   ============================================================ */
+
+.agent-dock {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 999;
+  /* Width and height are set inline by useResizable; these are only guards. */
+  min-width: 300px;
+  min-height: 260px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 110px);
+
+  background-color: var(--theme-bg);
+  border: 1px solid var(--theme-accent);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: monospace;
+
+  /* Hinged on the bottom-right corner: it rises from the edge. */
+  transform-origin: bottom right;
+  animation: agent-rise 420ms cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+
+@keyframes agent-rise {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.96) rotate(2deg); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-dock { animation: none; }
+}
+
+/* ── Header ─────────────────────────────────────────── */
+
+.agent-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--theme-accent);
+  flex-shrink: 0;
+}
+
+.agent-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--theme-accent);
+  flex-shrink: 0;
+}
+
+.agent-title {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--theme-accent);
+  margin-left: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.agent-close {
+  background: none;
+  border: none;
+  color: var(--theme-muted);
+  font-family: monospace;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+
+.agent-close:hover { color: var(--theme-accent); }
+
+/* ── Transcript ─────────────────────────────────────── */
+
+.agent-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.agent-system { color: var(--theme-muted); margin: 0; }
+.agent-user { color: var(--theme-accent); margin: 0; }
+
+.agent-reply {
+  color: var(--theme-body);
+  margin: 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--theme-accent);
+}
+
+.agent-thinking {
+  color: var(--theme-muted);
+  margin: 0;
+  animation: agent-blink 1.1s steps(2, start) infinite;
+}
+
+@keyframes agent-blink {
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-thinking { animation: none; }
+}
+
+/* ── Escalation ─────────────────────────────────────── */
+
+.agent-escalate {
+  margin: 0 12px 10px;
+  background: none;
+  color: var(--theme-control);
+  border: 1px solid var(--theme-control);
+  font-family: monospace;
+  font-size: 10.5px;
+  letter-spacing: 1px;
+  padding: 7px 10px;
+  cursor: pointer;
+  text-align: left;
+  flex-shrink: 0;
+}
+
+.agent-escalate:hover {
+  background-color: var(--theme-control);
+  color: var(--theme-bg);
+}
+
+/* ── Compose ────────────────────────────────────────── */
+
+.agent-compose {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--theme-accent);
+  flex-shrink: 0;
+}
+
+.agent-prompt { color: var(--theme-accent); font-size: 14px; }
+
+.agent-compose input {
+  flex: 1;
+  min-width: 0;
+  background-color: var(--theme-bg);
+  color: var(--theme-body);
+  border: 1px solid var(--theme-control);
+  outline: none;
+  font-family: monospace;
+  font-size: 12.5px;
+  padding: 6px 8px;
+}
+
+.agent-compose input:focus { border-color: var(--theme-accent); }
+
+.agent-compose button {
+  background-color: var(--theme-bg);
+  color: var(--theme-control);
+  border: 1px solid var(--theme-control);
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.agent-compose button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Initialisation ─────────────────────────────────── */
+
+.agent-boot {
+  flex: 1;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Character rain sits behind the status text rather than beside it. */
+.agent-boot-rain {
+  position: absolute;
+  inset: 0;
+  padding: 12px;
+  margin: 0;
+  color: var(--theme-accent);
+  opacity: 0.18;
+  font-size: 10px;
+  letter-spacing: 3px;
+  line-height: 1.5;
+  word-break: break-all;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.agent-boot-title {
+  position: relative;
+  color: var(--theme-accent);
+  font-size: 15px;
+  letter-spacing: 4px;
+  margin: 0;
+}
+
+.agent-boot-sub {
+  position: relative;
+  color: var(--theme-muted);
+  font-size: 11px;
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+/* Progress bar fills over the boot delay — motion with a meaning. */
+.agent-boot-bar {
+  position: relative;
+  width: 160px;
+  height: 2px;
+  background-color: var(--theme-border);
+  overflow: hidden;
+}
+
+.agent-boot-bar span {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background-color: var(--theme-accent);
+  transform-origin: left;
+  animation: agent-boot-fill 3s linear both;
+}
+
+@keyframes agent-boot-fill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-boot-bar span { animation: none; }
+  .agent-boot-rain { display: none; }
+}
+
+/* ── Resize handles ─────────────────────────────────
+   Invisible hit areas on the top and left edges, plus a
+   visible corner grip. The panel is anchored bottom-right,
+   so these are the edges that grow it. */
+
+.agent-grip {
+  position: absolute;
+  z-index: 2;
+  touch-action: none;
+}
+
+.agent-grip--top {
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.agent-grip--left {
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 6px;
+  cursor: ew-resize;
+}
+
+/* The corner is the discoverable one, so it gets a mark. */
+.agent-grip--corner {
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  background: linear-gradient(
+    135deg,
+    var(--theme-control) 0 2px,
+    transparent 2px 4px,
+    var(--theme-control) 4px 6px,
+    transparent 6px
+  );
+}
+
+/* While dragging, stop text selection and pointer events inside the panel
+   from fighting the drag. */
+.agent-dock--resizing {
+  user-select: none;
+  animation: none;
+}
+
+.agent-dock--resizing .agent-log,
+.agent-dock--resizing .agent-compose {
+  pointer-events: none;
+}
+
+/* ── Minimised ──────────────────────────────────────
+   Collapsed to the title bar. The min-height that keeps
+   the open panel usable has to be released, or the
+   collapsed bar would still be 260px tall. */
+
+.agent-dock--minimised {
+  min-height: 0;
+  border-color: var(--theme-control);
+}
+
+.agent-dock--minimised .agent-head {
+  border-bottom: none;
+}

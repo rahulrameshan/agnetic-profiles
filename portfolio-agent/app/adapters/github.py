@@ -6,6 +6,7 @@ that satisfies it belong together — change one and you must change the other.
 """
 
 import re
+from typing import Any
 
 import requests
 
@@ -23,13 +24,14 @@ def username_in(cv_text: str) -> str | None:
     return match.group(1) if match else None
 
 
-def _get(path: str) -> dict | list:
+def _get(path: str) -> Any:
+    """Decoded JSON. The shape varies by endpoint, so it stays untyped here."""
     response = requests.get(f"{API}{path}", headers=HEADERS, timeout=TIMEOUT)
     response.raise_for_status()
     return response.json()
 
 
-def _summarise_repos(repos: list[dict]) -> list[dict]:
+def _summarise_repos(repos: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [
         {
             "name": repo["name"],
@@ -42,7 +44,7 @@ def _summarise_repos(repos: list[dict]) -> list[dict]:
     ]
 
 
-def fetch(username: str) -> dict | str:
+def fetch(username: str) -> dict[str, Any] | str:
     """
     Profile and recent repositories for a username.
 

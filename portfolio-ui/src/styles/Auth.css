@@ -362,3 +362,85 @@
   padding: 6px 16px;
   font-size: 11px;
 }
+
+/* ── Notifications and direct chat ──────────────────── */
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notification {
+  background: none;
+  border: 1px solid var(--theme-border);
+  border-left: 2px solid var(--theme-border);
+  padding: 12px 14px;
+  text-align: left;
+  font-family: monospace;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--theme-body);
+}
+
+/* Unread is carried by the accent rail, not by colour alone. */
+.notification--unread {
+  border-left-color: var(--theme-accent);
+  background-color: var(--theme-surface);
+}
+
+.notification-body { font-size: 13px; }
+
+.notification-meta {
+  font-size: 11px;
+  color: var(--theme-muted);
+  letter-spacing: 1px;
+}
+
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.transcript-user { color: var(--theme-accent); margin: 0; }
+.transcript-assistant { color: var(--theme-muted); margin: 0; padding-left: 10px; }
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 46vh;
+  overflow-y: auto;
+  margin-bottom: 14px;
+}
+
+.bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--theme-border);
+  padding: 10px 12px;
+  max-width: 80%;
+  font-size: 13px;
+}
+
+/* Your own messages sit right and carry the accent edge. */
+.bubble--mine {
+  align-self: flex-end;
+  border-color: var(--theme-accent);
+}
+
+.bubble-body { color: var(--theme-body); }
+
+.bubble-time {
+  font-size: 10px;
+  color: var(--theme-muted);
+  letter-spacing: 1px;
+}
+
+.thread-input { flex: 1; max-width: none; }

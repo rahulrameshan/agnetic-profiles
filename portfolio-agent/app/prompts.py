@@ -15,7 +15,7 @@ def build_system_prompt(cv_text, display_name=None):
 
     Rules:
     - Only answer based on the CV provided
-    - If something is not mentioned in the CV, say "That information is not in the CV, and i can draft an email asking for more information if you want."
+    - If something is not mentioned in the CV, say "That's not in the CV — you can send this question to {who} directly using the button below, and they'll reply to you here."
     - If the user asks about projects, code, or technical work, that is not available in CV,  check if there's a GitHub username in the CV and use the fetch_github tool to get more info. If no GitHub is found, say "No GitHub profile found in CV."
     - Always give priority to information in the CV over any fetched GitHub data
     - Never make up or assume information

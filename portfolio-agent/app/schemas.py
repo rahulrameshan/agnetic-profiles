@@ -150,3 +150,66 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     session_id: str
     response: str
+
+
+# ── escalation, notifications and direct chat ────────────────────────────────
+
+
+class EscalateRequest(BaseModel):
+    """A signed-in visitor sending the owner a question the agent couldn't answer."""
+
+    question: str = Field(min_length=1, max_length=2000)
+    session_id: str | None = Field(
+        default=None,
+        max_length=100,
+        description="Agent session this came from, so the owner gets the context.",
+    )
+
+
+class NotificationOut(BaseModel):
+    id: uuid.UUID
+    kind: str
+    body: str
+    is_read: bool
+    conversation_id: uuid.UUID | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class InboxOut(BaseModel):
+    unread: int
+    notifications: list[NotificationOut]
+
+
+class DirectMessageOut(BaseModel):
+    id: uuid.UUID
+    sender_user_id: uuid.UUID
+    body: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class MessageRequest(BaseModel):
+    body: str = Field(min_length=1, max_length=4000)
+
+
+class ConversationSummary(BaseModel):
+    """A row in the threads list. `with_*` describes the other person."""
+
+    id: uuid.UUID
+    with_username: str
+    with_display_name: str
+    last_message_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ConversationOut(BaseModel):
+    id: uuid.UUID
+    with_username: str
+    with_display_name: str
+    messages: list[DirectMessageOut]
+    # The agent exchange that prompted the escalation, shown to give context.
+    agent_transcript: list[dict]

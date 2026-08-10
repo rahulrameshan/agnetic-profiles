@@ -11,6 +11,7 @@ rules about how the agent must behave, not a detail of which vendor we call.
 """
 
 import json
+from typing import Any
 
 from openai import OpenAI
 
@@ -28,7 +29,7 @@ NO_GITHUB = "No GitHub profile found in CV."
 # ── conversation ────────────────────────────────────────────────────────────
 
 
-def _tools_for(github_username: str | None) -> list[dict] | None:
+def _tools_for(github_username: str | None) -> list[Any] | None:
     """
     Only offer the GitHub tool when there is an account to fetch.
 
@@ -38,7 +39,7 @@ def _tools_for(github_username: str | None) -> list[dict] | None:
     return github.TOOL_DEFINITIONS if github_username else None
 
 
-def _run_tool_calls(choice, github_username: str | None) -> list[dict]:
+def _run_tool_calls(choice: Any, github_username: str | None) -> list[dict[str, Any]]:
     """Execute the tools the model asked for, as tool messages to append."""
     messages = []
 
@@ -59,27 +60,33 @@ def _run_tool_calls(choice, github_username: str | None) -> list[dict]:
     return messages
 
 
-def _complete(messages: list[dict], tools: list[dict] | None = None):
-    kwargs = {
-        "model": settings.openai_model,
-        "max_tokens": settings.max_answer_tokens,
-        "messages": messages,
-    }
-    if tools:
-        kwargs["tools"] = tools
-
+def _complete(messages: list[Any], tools: list[Any] | None = None) -> Any:
+    """One completion. Tools are only offered when there are any to offer."""
     try:
-        return client.chat.completions.create(**kwargs).choices[0]
+        if tools:
+            response = client.chat.completions.create(
+                model=settings.openai_model,
+                max_tokens=settings.max_answer_tokens,
+                messages=messages,
+                tools=tools,
+            )
+        else:
+            response = client.chat.completions.create(
+                model=settings.openai_model,
+                max_tokens=settings.max_answer_tokens,
+                messages=messages,
+            )
+        return response.choices[0]
     except Exception as e:
         raise AgentUnavailable(f"The agent is unavailable right now: {e}")
 
 
 def answer_question(
     cv_text: str,
-    history: list[dict],
+    history: list[dict[str, Any]],
     question: str,
     display_name: str | None = None,
-) -> tuple[str, list[dict]]:
+) -> tuple[str, list[dict[str, Any]]]:
     """
     Run one turn and return (answer, messages_to_persist).
 
@@ -118,7 +125,7 @@ def answer_question(
 # ── extraction ──────────────────────────────────────────────────────────────
 
 
-def extract_profile(cv_text: str) -> dict:
+def extract_profile(cv_text: str) -> dict[str, Any]:
     """Turn a CV into the structured page content. Raises on failure."""
     try:
         response = client.chat.completions.create(
@@ -138,4 +145,8 @@ def extract_profile(cv_text: str) -> dict:
     except Exception as e:
         raise AgentUnavailable(f"Profile generation failed: {e}")
 
-    return json.loads(response.choices[0].message.content)
+    content = response.choices[0].message.content
+    if content is None:
+        raise AgentUnavailable("Profile generation returned an empty response.")
+
+    return json.loads(content)

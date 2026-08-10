@@ -33,6 +33,20 @@ function Dashboard() {
   /* The owner sees their own colour while managing their page. */
   useTheme(user?.theme_color);
 
+  const [unread, setUnread] = useState(0);
+
+  /* Poll the inbox so a new question shows up without a reload. */
+  useEffect(() => {
+    const check = () =>
+      api
+        .get("/me/notifications")
+        .then((res) => setUnread(res.data.unread))
+        .catch(() => {});
+    check();
+    const timer = setInterval(check, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
   const refresh = useCallback(async () => {
     try {
       const [cvRes, profileRes] = await Promise.all([
@@ -118,6 +132,9 @@ function Dashboard() {
             </p>
           </div>
           <div className="dashboard-actions">
+            <Link className="nav-link" to="/notifications">
+              NOTIFICATIONS{unread > 0 ? ` (${unread})` : ""}
+            </Link>
             <Link className="nav-link" to="/users">
               ALL USERS
             </Link>

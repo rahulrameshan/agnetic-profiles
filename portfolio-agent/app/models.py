@@ -135,6 +135,12 @@ class ChatSession(Base):
     )
     visitor_token: Mapped[str] = mapped_column(String(100))
 
+    # Set once an anonymous visitor signs in to escalate a question, so the owner
+    # can see who they are talking to. Null for visitors who never sign in.
+    visitor_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     messages: Mapped[list["ChatMessage"]] = relationship(
@@ -163,3 +169,96 @@ class ChatMessage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     session: Mapped["ChatSession"] = relationship(back_populates="messages")
+
+
+class Conversation(Base):
+    """
+    A person-to-person thread between a page owner and a visitor.
+
+    Distinct from ChatSession, which is a visitor talking to an *agent*. This is
+    two humans. One thread per pair, so escalating twice continues the same
+    conversation rather than fragmenting it.
+    """
+
+    __tablename__ = "conversations"
+    __table_args__ = (
+        UniqueConstraint("owner_user_id", "visitor_user_id", name="uq_conversation_pair"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    owner_user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    visitor_user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+
+    # The agent transcript that prompted the escalation, kept as context for the
+    # owner. Null if the thread started some other way.
+    chat_session_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("chat_sessions.id", ondelete="SET NULL"), nullable=True
+    )
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    last_message_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, index=True
+    )
+
+    messages: Mapped[list["DirectMessage"]] = relationship(
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        order_by="DirectMessage.created_at",
+    )
+
+
+class DirectMessage(Base):
+    """One human-written message inside a Conversation."""
+
+    __tablename__ = "direct_messages"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), index=True
+    )
+    sender_user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE")
+    )
+
+    body: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+    conversation: Mapped["Conversation"] = relationship(back_populates="messages")
+
+
+class Notification(Base):
+    """
+    An item in someone's inbox.
+
+    Deliberately generic — `kind` distinguishes an escalated question from a
+    direct reply — so new events don't need new tables.
+    """
+
+    __tablename__ = "notifications"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    actor_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    conversation_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=True
+    )
+
+    kind: Mapped[str] = mapped_column(String(30))  # question_escalated | message_received
+    body: Mapped[str] = mapped_column(Text)
+
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
