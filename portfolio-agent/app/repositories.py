@@ -13,7 +13,16 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import CV, ChatMessage, ChatSession, Profile, User
+from app.models import (
+    CV,
+    ChatMessage,
+    ChatSession,
+    Conversation,
+    DirectMessage,
+    Notification,
+    Profile,
+    User,
+)
 
 
 class UserRepository:
@@ -115,6 +124,9 @@ class ChatRepository:
             )
         )
 
+    def find_session_by_id(self, session_id: uuid.UUID) -> ChatSession | None:
+        return self._db.get(ChatSession, session_id)
+
     def start_session(self, owner_id: uuid.UUID, visitor_token: str) -> ChatSession:
         session = ChatSession(owner_user_id=owner_id, visitor_token=visitor_token)
         self._db.add(session)
@@ -124,6 +136,10 @@ class ChatRepository:
     def history(self, session: ChatSession) -> list[dict]:
         """Prior messages as raw OpenAI dicts, oldest first."""
         return [message.raw for message in session.messages]
+
+    def link_visitor(self, session: ChatSession, visitor_user_id: uuid.UUID) -> None:
+        """Attach a now-signed-in visitor to the session they chatted under."""
+        session.visitor_user_id = visitor_user_id
 
     def append(self, session: ChatSession, messages: list[dict]) -> None:
         for raw in messages:
@@ -149,6 +165,120 @@ class ChatRepository:
         return total or 0
 
 
+class ConversationRepository:
+    def __init__(self, db: Session):
+        self._db = db
+
+    def get(self, conversation_id: uuid.UUID) -> Conversation | None:
+        return self._db.get(Conversation, conversation_id)
+
+    def between(
+        self, owner_id: uuid.UUID, visitor_id: uuid.UUID
+    ) -> Conversation | None:
+        return self._db.scalar(
+            select(Conversation).where(
+                Conversation.owner_user_id == owner_id,
+                Conversation.visitor_user_id == visitor_id,
+            )
+        )
+
+    def start(
+        self,
+        owner_id: uuid.UUID,
+        visitor_id: uuid.UUID,
+        chat_session_id: uuid.UUID | None,
+    ) -> Conversation:
+        conversation = Conversation(
+            owner_user_id=owner_id,
+            visitor_user_id=visitor_id,
+            chat_session_id=chat_session_id,
+        )
+        self._db.add(conversation)
+        self._db.flush()
+        return conversation
+
+    def list_for(self, user_id: uuid.UUID) -> list[Conversation]:
+        """Threads this user takes part in, most recently active first."""
+        return list(
+            self._db.scalars(
+                select(Conversation)
+                .where(
+                    (Conversation.owner_user_id == user_id)
+                    | (Conversation.visitor_user_id == user_id)
+                )
+                .order_by(Conversation.last_message_at.desc())
+            )
+        )
+
+    def add_message(
+        self, conversation: Conversation, sender_id: uuid.UUID, body: str
+    ) -> DirectMessage:
+        message = DirectMessage(
+            conversation_id=conversation.id, sender_user_id=sender_id, body=body
+        )
+        self._db.add(message)
+        conversation.last_message_at = datetime.now(timezone.utc)
+        self._db.flush()
+        return message
+
+
+class NotificationRepository:
+    def __init__(self, db: Session):
+        self._db = db
+
+    def get(self, notification_id: uuid.UUID) -> Notification | None:
+        return self._db.get(Notification, notification_id)
+
+    def add(
+        self,
+        *,
+        user_id: uuid.UUID,
+        actor_user_id: uuid.UUID | None,
+        conversation_id: uuid.UUID | None,
+        kind: str,
+        body: str,
+    ) -> Notification:
+        notification = Notification(
+            user_id=user_id,
+            actor_user_id=actor_user_id,
+            conversation_id=conversation_id,
+            kind=kind,
+            body=body,
+        )
+        self._db.add(notification)
+        self._db.flush()
+        return notification
+
+    def list_for(self, user_id: uuid.UUID, limit: int = 50) -> list[Notification]:
+        return list(
+            self._db.scalars(
+                select(Notification)
+                .where(Notification.user_id == user_id)
+                .order_by(Notification.created_at.desc())
+                .limit(limit)
+            )
+        )
+
+    def count_unread(self, user_id: uuid.UUID) -> int:
+        total = self._db.scalar(
+            select(func.count(Notification.id)).where(
+                Notification.user_id == user_id, Notification.is_read.is_(False)
+            )
+        )
+        return total or 0
+
+    def count_today_from(self, actor_id: uuid.UUID) -> int:
+        """Escalations this person raised in the last day — the abuse guard."""
+        since = datetime.now(timezone.utc) - timedelta(days=1)
+        total = self._db.scalar(
+            select(func.count(Notification.id)).where(
+                Notification.actor_user_id == actor_id,
+                Notification.created_at >= since,
+            )
+        )
+        return total or 0
+
+
 class UnitOfWork:
     """
     One transaction, and the repositories that participate in it.
@@ -163,6 +293,8 @@ class UnitOfWork:
         self.cvs = CVRepository(db)
         self.profiles = ProfileRepository(db)
         self.chats = ChatRepository(db)
+        self.conversations = ConversationRepository(db)
+        self.notifications = NotificationRepository(db)
 
     def commit(self) -> None:
         self._db.commit()

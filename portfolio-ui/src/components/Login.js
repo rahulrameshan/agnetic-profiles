@@ -6,7 +6,7 @@
  */
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { errorMessage } from "../api/client";
 import useTheme from "../useTheme";
@@ -16,6 +16,10 @@ import "../styles/Auth.css";
 function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+
+  /* Set when a visitor was sent here mid-flow, e.g. to escalate a question. */
+  const next = params.get("next") || "/dashboard";
 
   useTheme(SITE_THEME_COLOR);
 
@@ -31,7 +35,7 @@ function Login() {
 
     try {
       await login(email, password);
-      navigate("/dashboard");
+      navigate(next);
     } catch (err) {
       setError(errorMessage(err, "Could not sign in."));
     } finally {

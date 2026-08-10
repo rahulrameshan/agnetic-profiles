@@ -1,24 +1,47 @@
 /*
  * Chat.js
  * -------
- * Terminal-styled chat with a candidate's agent.
+ * The CV agent, docked bottom-right.
+ *
+ * Floats over the profile rather than replacing it, so a visitor can read a
+ * section and ask about it at the same time. The message dock is hinged on the
+ * top-right corner; this one rises from the bottom-right, so the two coexist.
  *
  * `username` selects whose agent answers and is required — there is no
  * single-tenant fallback, because no account is special.
  */
 
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import api, { errorMessage } from "../api/client";
+import { useAuth } from "../context/AuthContext";
+import useResizable from "../useResizable";
+import "../styles/AgentDock.css";
 
-function Chat({ sessionId, username }) {
+const BOOT_MS = 3000;
+const RAIN_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*";
+const DEFAULT_SIZE = { width: 420, height: 520 };
+
+function Chat({ sessionId, username, ownerName, onClose }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const { size, resizing, startResize } = useResizable({
+    storageKey: "agent_dock_size",
+    defaultSize: DEFAULT_SIZE,
+  });
+
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [matrixDone, setMatrixDone] = useState(false);
+  const [booted, setBooted] = useState(false);
+  const [lastQuestion, setLastQuestion] = useState("");
+  const [escalated, setEscalated] = useState(false);
+  const [minimised, setMinimised] = useState(false);
   const bottomRef = useRef(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setMatrixDone(true), 3000);
+    const timer = setTimeout(() => setBooted(true), BOOT_MS);
     return () => clearTimeout(timer);
   }, []);
 
@@ -29,8 +52,9 @@ function Chat({ sessionId, username }) {
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMessage = { role: "user", content: input };
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, { role: "user", content: input }]);
+    setLastQuestion(input);
+    setEscalated(false);
     setInput("");
     setLoading(true);
 
@@ -39,226 +63,194 @@ function Chat({ sessionId, username }) {
         session_id: sessionId,
         message: input,
       });
-
-      // Surface backend application-level errors (e.g. session not found)
       const content = response.data.response || response.data.error;
-      const agentMessage = {
-        role: "agent",
-        content: content || "No response received.",
-      };
-      setMessages((prev) => [...prev, agentMessage]);
-    } catch (err) {
-      const detail = errorMessage(
-        err,
-        "Connection failed — is the agent backend running?"
-      );
       setMessages((prev) => [
         ...prev,
-        { role: "agent", content: `ERROR: ${detail}` },
+        { role: "agent", content: content || "No response received." },
+      ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "agent",
+          content: `ERROR: ${errorMessage(err, "Connection failed — is the agent backend running?")}`,
+        },
       ]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") sendMessage();
+  /*
+   * Escalate the last question to the page owner.
+   *
+   * Sign-in is required, which is what stops this becoming an anonymous way to
+   * put things in someone's inbox. Signed-out visitors are sent to log in and
+   * returned here afterwards.
+   */
+  const askOwner = async () => {
+    if (!user) {
+      navigate(`/login?next=${encodeURIComponent(`/u/${username}`)}`);
+      return;
+    }
+
+    try {
+      await api.post(`/u/${username}/ask`, {
+        question: lastQuestion,
+        session_id: sessionId,
+      });
+      setEscalated(true);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "agent",
+          content: `Sent to ${ownerName || username}. They'll see it in their messages and can reply to you directly.`,
+        },
+      ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "agent", content: `ERROR: ${errorMessage(err, "Could not send that.")}` },
+      ]);
+    }
   };
 
-  if (!matrixDone) {
-    return <MatrixScreen />;
-  }
-
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <span style={styles.dot} />
-        <span style={styles.dot} />
-        <span style={styles.dot} />
-        <span style={styles.headerText}>AGENT_TERMINAL — SESSION: {sessionId}</span>
-      </div>
+    <div
+      className={`agent-dock ${resizing ? "agent-dock--resizing" : ""} ${
+        minimised ? "agent-dock--minimised" : ""
+      }`}
+      /* Collapsed to its title bar, the panel takes whatever height that needs. */
+      style={{ width: size.width, height: minimised ? "auto" : size.height }}
+    >
+      {/* Handles live on the edges away from the bottom-right anchor, so
+        * dragging outward grows the panel instead of pushing it off screen.
+        * There is nothing to resize while collapsed. */}
+      {!minimised && (
+        <>
+          <span
+            className="agent-grip agent-grip--corner"
+            onPointerDown={startResize("both")}
+            role="separator"
+            aria-label="Resize agent window"
+          />
+          <span
+            className="agent-grip agent-grip--top"
+            onPointerDown={startResize("y")}
+            role="separator"
+            aria-label="Resize agent height"
+          />
+          <span
+            className="agent-grip agent-grip--left"
+            onPointerDown={startResize("x")}
+            role="separator"
+            aria-label="Resize agent width"
+          />
+        </>
+      )}
 
-      <div style={styles.chatBox}>
-        <p style={styles.systemMsg}>{">"} System initialised. CV loaded. Ready for query.</p>
-        {messages.map((msg, index) => (
-          <div key={index} style={styles.messageBlock}>
-            {msg.role === "user" ? (
-              <p style={styles.userMsg}>{"> " + msg.content}</p>
-            ) : (
-              <p style={styles.agentMsg}>{"$ " + msg.content}</p>
-            )}
-          </div>
-        ))}
-        {loading && <p style={styles.loading}>$ processing query...</p>}
-        <div ref={bottomRef} />
-      </div>
-
-      <div style={styles.inputRow}>
-        <span style={styles.prompt}>{">"}</span>
-        <input
-          style={styles.input}
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="enter your query..."
-          autoFocus
-        />
-        <button style={styles.button} onClick={sendMessage} disabled={loading}>
-          RUN
+      <header className="agent-head">
+        <span className="agent-dot" />
+        <span className="agent-dot" />
+        <span className="agent-dot" />
+        <span className="agent-title">
+          AGENT — {(ownerName || username).toUpperCase()}
+        </span>
+        <button
+          className="agent-close"
+          onClick={() => setMinimised((prev) => !prev)}
+          aria-label={minimised ? "Expand agent" : "Minimise agent"}
+          title={minimised ? "Expand" : "Minimise"}
+        >
+          {minimised ? "▢" : "—"}
         </button>
-      </div>
+
+        {onClose && (
+          <button className="agent-close" onClick={onClose} aria-label="Close agent">
+            ✕
+          </button>
+        )}
+      </header>
+
+      {/* Collapsed: only the title bar remains. The conversation is kept in
+        * state, so expanding again resumes it rather than starting over. */}
+      {minimised ? null : !booted ? (
+        <BootScreen />
+      ) : (
+        <>
+          <div className="agent-log">
+            <p className="agent-system">
+              &gt; System initialised. CV loaded. Ready for query.
+            </p>
+
+            {messages.map((message, i) =>
+              message.role === "user" ? (
+                <p className="agent-user" key={i}>&gt; {message.content}</p>
+              ) : (
+                <p className="agent-reply" key={i}>{message.content}</p>
+              )
+            )}
+
+            {loading && <p className="agent-thinking">$ processing query…</p>}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Offered once there's a question to forward — the agent's own reply
+            * invites this when it can't answer from the CV. */}
+          {lastQuestion && !loading && !escalated && (
+            <button className="agent-escalate" onClick={askOwner}>
+              {user
+                ? `↗ ASK ${(ownerName || username).toUpperCase()} THIS DIRECTLY`
+                : "↗ SIGN IN TO ASK THEM DIRECTLY"}
+            </button>
+          )}
+
+          <div className="agent-compose">
+            <span className="agent-prompt">&gt;</span>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder="enter your query..."
+              aria-label="Ask the agent"
+              autoFocus
+            />
+            <button onClick={sendMessage} disabled={loading}>
+              RUN
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-function MatrixScreen() {
-  const [chars, setChars] = useState("");
-  const matrixChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*";
+/* Initialisation: character rain behind a status readout and a bar that fills
+ * over the boot delay, so the wait shows progress rather than just noise. */
+function BootScreen() {
+  const [rain, setRain] = useState("");
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const random = Array.from({ length: 200 }, () =>
-        matrixChars[Math.floor(Math.random() * matrixChars.length)]
-      ).join("");
-      setChars(random);
+      setRain(
+        Array.from(
+          { length: 320 },
+          () => RAIN_CHARS[Math.floor(Math.random() * RAIN_CHARS.length)]
+        ).join("")
+      );
     }, 100);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div style={styles.matrixContainer}>
-      <p style={styles.matrixChars}>{chars}</p>
-      <p style={styles.matrixText}>INITIALISING AGENT...</p>
-      <p style={styles.matrixSubText}>LOADING CV DATA...</p>
+    <div className="agent-boot">
+      <p className="agent-boot-rain" aria-hidden="true">{rain}</p>
+      <p className="agent-boot-title">INITIALISING AGENT</p>
+      <p className="agent-boot-sub">LOADING CV DATA…</p>
+      <div className="agent-boot-bar"><span /></div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    backgroundColor: "var(--theme-bg)",
-    color: "var(--theme-accent)",
-    fontFamily: "monospace",
-    height: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    padding: "20px",
-    boxSizing: "border-box",
-  },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    marginBottom: "16px",
-    borderBottom: "1px solid var(--theme-accent)",
-    paddingBottom: "10px",
-  },
-  dot: {
-    width: "12px",
-    height: "12px",
-    borderRadius: "50%",
-    backgroundColor: "var(--theme-accent)",
-    display: "inline-block",
-  },
-  headerText: {
-    fontSize: "14px",
-    letterSpacing: "2px",
-    marginLeft: "10px",
-  },
-  chatBox: {
-    flex: 1,
-    overflowY: "scroll",
-    marginBottom: "16px",
-    paddingRight: "10px",
-  },
-  systemMsg: {
-    color: "var(--theme-accent)",
-    opacity: 0.6,
-    marginBottom: "12px",
-  },
-  messageBlock: {
-    marginBottom: "12px",
-  },
-  userMsg: {
-    color: "var(--theme-accent)",
-    margin: 0,
-  },
-  agentMsg: {
-    color: "var(--theme-accent)",
-    margin: 0,
-    opacity: 0.9,
-    paddingLeft: "12px",
-    borderLeft: "2px solid var(--theme-accent)",
-  },
-  loading: {
-    color: "var(--theme-accent)",
-    opacity: 0.5,
-    animation: "blink 1s infinite",
-  },
-  inputRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    borderTop: "1px solid var(--theme-accent)",
-    paddingTop: "12px",
-  },
-  prompt: {
-    color: "var(--theme-accent)",
-    fontSize: "18px",
-  },
-  input: {
-    flex: 1,
-    backgroundColor: "var(--theme-bg)",
-    color: "var(--theme-body)",
-    border: "1px solid var(--theme-control)",
-    outline: "none",
-    fontFamily: "monospace",
-    fontSize: "16px",
-    padding: "6px",
-  },
-  button: {
-    backgroundColor: "var(--theme-bg)",
-    color: "var(--theme-control)",
-    border: "1px solid var(--theme-control)",
-    fontFamily: "monospace",
-    fontSize: "14px",
-    padding: "6px 16px",
-    cursor: "pointer",
-    letterSpacing: "2px",
-  },
-  matrixContainer: {
-    backgroundColor: "var(--theme-bg)",
-    height: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    fontFamily: "monospace",
-    overflow: "hidden",
-  },
-  matrixChars: {
-    color: "var(--theme-accent)",
-    opacity: 0.3,
-    fontSize: "12px",
-    wordBreak: "break-all",
-    padding: "20px",
-    letterSpacing: "4px",
-  },
-  matrixText: {
-    color: "var(--theme-accent)",
-    fontSize: "24px",
-    letterSpacing: "6px",
-    position: "absolute",
-  },
-  matrixSubText: {
-    color: "var(--theme-accent)",
-    fontSize: "14px",
-    letterSpacing: "4px",
-    opacity: 0.7,
-    position: "absolute",
-    marginTop: "60px",
-  },
-};
 
 export default Chat;

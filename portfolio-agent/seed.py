@@ -86,6 +86,10 @@ def main() -> int:
     db = SessionLocal()
     try:
         profile = UnitOfWork(db).profiles.for_user(user_id)
+        if profile is None:
+            print("No profile was created — nothing to report.")
+            return 1
+
         print(f"Profile status: {profile.status}")
         if profile.status == "failed":
             print(f"  error: {profile.error}")

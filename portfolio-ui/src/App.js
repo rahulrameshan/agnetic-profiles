@@ -16,6 +16,9 @@ import Signup from "./components/Signup";
 import Dashboard from "./components/Dashboard";
 import Settings from "./components/Settings";
 import AllUsers from "./components/AllUsers";
+import Notifications from "./components/Notifications";
+import ChatDock from "./components/ChatDock";
+import { ChatDockProvider } from "./context/ChatDockContext";
 
 /* Gate for owner-only routes. Waits for the token check so a signed-in user
  * isn't bounced to /login on a refresh. */
@@ -33,7 +36,8 @@ function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
-        <Routes>
+        <ChatDockProvider>
+          <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -53,10 +57,17 @@ function App() {
               </RequireAuth>
             }
           />
+          <Route
+            path="/notifications"
+            element={<RequireAuth><Notifications /></RequireAuth>}
+          />
           <Route path="/users" element={<AllUsers />} />
           <Route path="/u/:username" element={<PublicProfile />} />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          </Routes>
+          {/* Floats above every page — messages are a side channel. */}
+          <ChatDock />
+        </ChatDockProvider>
       </AuthProvider>
     </BrowserRouter>
   );

@@ -20,3 +20,30 @@ dependencies = [
     "sqlalchemy>=2.0.36",
     "uvicorn>=0.44.0",
 ]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.3.0",
+    "types-requests>=2.33.0.20260712",
+]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["app", "seed.py"]
+
+# Baseline: the codebase passes this cleanly today, so any new error is a real
+# regression rather than pre-existing debt. Tighten by adding
+# `disallow_untyped_defs` once the annotations are in — module by module via
+# [[tool.mypy.overrides]] rather than all at once.
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+
+# Generated migrations are Alembic's output, not hand-written code.
+exclude = "alembic/versions/"
+
+[[tool.mypy.overrides]]
+# No published stubs; both are used behind a thin adapter anyway.
+module = ["slowapi.*", "pypdf.*"]
+ignore_missing_imports = true
