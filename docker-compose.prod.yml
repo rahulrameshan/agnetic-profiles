@@ -23,6 +23,7 @@ services:
 
   api:
     build: ./portfolio-agent
+    image: ghcr.io/rahulrameshan/agnetic-profiles-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       postgres:
@@ -46,6 +47,7 @@ services:
       args:
         # Relative path: the browser calls the same origin it loaded from.
         REACT_APP_AGENT_URL: /api
+    image: ghcr.io/rahulrameshan/agnetic-profiles-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       - api
